@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "Q9a1+kGfQyjwdulweMOiNwOybj9lGaHYUguscMvNGhg=",
+  "Source": "nba_API",
+  "BasePath": "_content/nba_API",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

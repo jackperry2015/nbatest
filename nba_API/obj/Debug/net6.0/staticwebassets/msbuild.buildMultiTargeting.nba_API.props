@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\nba_API.props" />
+</Project>
