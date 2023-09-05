@@ -1,0 +1,67 @@
+PROCEDURE [dbo].[GetTeamStatistics]
+AS
+BEGIN
+    SELECT
+        T.TeamID,
+        T.Name,
+        T.Stadium,
+        T.Logo,
+        T.URL,
+        COUNT(DISTINCT CASE WHEN G.HomeTeamID = T.TeamID OR G.AwayTeamID = T.TeamID THEN G.GameID END) AS GamesPlayedCount,
+        SUM(CASE WHEN G.HomeTeamID = T.TeamID THEN 1 ELSE 0 END) AS HomeTeamCount,
+        SUM(CASE WHEN G.AwayTeamID = T.TeamID THEN 1 ELSE 0 END) AS AwayTeamCount,
+        SUM(CASE
+            WHEN T.TeamID = G.HomeTeamID AND G.HomeScore > G.AwayScore THEN 1
+            WHEN T.TeamID = G.AwayTeamID AND G.AwayScore > G.HomeScore THEN 1
+            ELSE 0
+        END) AS TotalWins,
+        SUM(CASE
+            WHEN T.TeamID = G.HomeTeamID AND G.HomeScore < G.AwayScore THEN 1
+            WHEN T.TeamID = G.AwayTeamID AND G.AwayScore < G.HomeScore THEN 1
+            ELSE 0
+        END) AS TotalLoss,
+        (SELECT TOP 1 
+            CASE 
+                WHEN T.TeamID = G.HomeTeamID THEN CONCAT('[', G.HomeScore, '-', G.AwayScore, ']')
+                ELSE CONCAT('[', G.AwayScore, '-', G.HomeScore, ']')
+            END
+        FROM Games G
+        WHERE (T.TeamID = G.HomeTeamID AND G.HomeScore > G.AwayScore)
+            OR (T.TeamID = G.AwayTeamID AND G.AwayScore > G.HomeScore)
+        ORDER BY ABS(G.HomeScore - G.AwayScore) DESC) AS BiggestWin,
+        (SELECT TOP 1 
+            CASE 
+                WHEN T.TeamID = G.HomeTeamID THEN CONCAT('[', G.HomeScore, '-', G.AwayScore, ']')
+                ELSE CONCAT('[', G.AwayScore, '-', G.HomeScore, ']')
+            END
+        FROM Games G
+        WHERE (T.TeamID = G.HomeTeamID AND G.HomeScore < G.AwayScore)
+            OR (T.TeamID = G.AwayTeamID AND G.AwayScore < G.HomeScore)
+        ORDER BY ABS(G.HomeScore - G.AwayScore) DESC) AS BiggestLoss,
+        (
+            SELECT TOP 1 T2.Stadium
+            FROM Teams T2
+            JOIN (
+                SELECT TOP 1 G2.HomeTeamID AS TeamID, G2.GameDateTime
+                FROM Games G2
+                WHERE G2.HomeTeamID = T.TeamID OR G2.AwayTeamID = T.TeamID
+                ORDER BY G2.GameDateTime DESC
+            ) G2 ON T2.TeamID = G2.TeamID
+        ) AS MostRecentGameStadium,
+        (
+            SELECT TOP 1 P.Name
+            FROM Players P
+            JOIN Games G3 ON P.PlayerID = G3.MVPPlayerID
+            WHERE G3.HomeTeamID = T.TeamID OR G3.AwayTeamID = T.TeamID
+            ORDER BY G3.GameDateTime DESC
+        ) AS MostRecentGameMVP,
+        CONVERT(VARCHAR(10), MAX(G.GameDateTime), 120) AS MostRecentGameDate
+    FROM
+        Teams T
+    LEFT JOIN
+        Games G ON T.TeamID = G.HomeTeamID OR T.TeamID = G.AwayTeamID
+    GROUP BY
+        T.TeamID, T.Name, T.Stadium, T.Logo, T.URL
+    ORDER BY
+        T.TeamID;
+END;
